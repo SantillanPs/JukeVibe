@@ -5,6 +5,7 @@ import 'screens/search_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/player_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'utils/theme_provider.dart';
 
 void main() {
@@ -52,6 +53,7 @@ class _MusicAppState extends State<MyApp> {
       initialRoute: '/login',
       routes: {
         '/login': (context) => LoginScreen(themeProvider: _themeProvider),
+        '/register': (context) => RegisterScreen(themeProvider: _themeProvider),
         '/home': (context) => MainScreen(themeProvider: _themeProvider),
       },
     );

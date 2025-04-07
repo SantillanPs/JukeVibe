@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import '../utils/theme_provider.dart';
-import 'users_screen.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   final ThemeProvider themeProvider;
 
-  const LoginScreen({Key? key, required this.themeProvider}) : super(key: key);
+  const RegisterScreen({Key? key, required this.themeProvider})
+    : super(key: key);
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+  bool _obscureConfirmPassword = true;
+  bool _agreeToTerms = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -39,16 +45,39 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // In a real app, you would handle authentication here
+  void _register() async {
+    if (_formKey.currentState!.validate() && _agreeToTerms) {
+      final data = {
+        'name': _usernameController.text,
+        'email': _emailController.text,
+        'password': _passwordController.text,
+      };
+
+      final jsonString = jsonEncode(data);
+
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/form_data.json');
+
+      await file.writeAsString(jsonString);
+
+      print('Saved to ${file.path}');
+
       Navigator.pushReplacementNamed(context, '/home');
+    } else if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the Terms and Conditions'),
+          backgroundColor: Color.fromARGB(255, 243, 109, 201),
+        ),
+      );
     }
   }
 
@@ -87,27 +116,16 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // App Bar with Back Button and Theme Toggle
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            icon: Icon(
-                              widget.themeProvider.isDarkMode
-                                  ? Icons.person
-                                  : Icons.person,
-                              color: textColor,
-                            ),
+                            icon: Icon(Icons.arrow_back, color: textColor),
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const UserDataScreen(),
-                                ),
-                              );
+                              Navigator.pop(context);
                             },
                           ),
-
-                          // Theme toggle button
                           IconButton(
                             icon: Icon(
                               widget.themeProvider.isDarkMode
@@ -122,12 +140,14 @@ class _LoginScreenState extends State<LoginScreen>
                         ],
                       ),
 
+                      const SizedBox(height: 20),
+
                       // Logo and App Name
                       Column(
                         children: [
                           Container(
-                            width: 100,
-                            height: 100,
+                            width: 80,
+                            height: 80,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color:
@@ -159,16 +179,16 @@ class _LoginScreenState extends State<LoginScreen>
                             child: const Icon(
                               Icons.music_note,
                               color: Color.fromARGB(255, 243, 109, 201),
-                              size: 50,
+                              size: 40,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
                           Text(
-                            "JukeVibe",
+                            "Create Account",
                             style: TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.bold,
-                              fontSize: 36,
+                              fontSize: 28,
                               shadows: [
                                 Shadow(
                                   color: const Color.fromARGB(
@@ -179,41 +199,74 @@ class _LoginScreenState extends State<LoginScreen>
                                   ).withAlpha(178),
                                   blurRadius: 15,
                                 ),
-                                Shadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    243,
-                                    109,
-                                    201,
-                                  ).withAlpha(128),
-                                  blurRadius: 25,
-                                ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "Your music, your vibe",
+                            "Join JukeVibe and start your musical journey",
                             style: TextStyle(
                               color: subtitleColor,
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 32),
 
-                      // Login Form
+                      // Registration Form
                       Form(
                         key: _formKey,
                         child: Column(
                           children: [
+                            // Username Field
+                            TextFormField(
+                              controller: _usernameController,
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
+                                labelText: 'Username',
+                                labelStyle: TextStyle(color: subtitleColor),
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: subtitleColor,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color.fromARGB(255, 243, 109, 201),
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: inputBgColor,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a username';
+                                }
+                                if (value.length < 3) {
+                                  return 'Username must be at least 3 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
                             // Email Field
                             TextFormField(
                               controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
                               style: TextStyle(color: textColor),
                               decoration: InputDecoration(
-                                labelText: 'Email or Username',
+                                labelText: 'Email',
                                 labelStyle: TextStyle(color: subtitleColor),
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
@@ -238,12 +291,17 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your email or username';
+                                  return 'Please enter your email';
+                                }
+                                if (!RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                ).hasMatch(value)) {
+                                  return 'Please enter a valid email address';
                                 }
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
 
                             // Password Field
                             TextFormField(
@@ -289,86 +347,146 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
+                                  return 'Please enter a password';
+                                }
+                                if (value.length < 6) {
+                                  return 'Password must be at least 6 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Confirm Password Field
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirmPassword,
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
+                                labelText: 'Confirm Password',
+                                labelStyle: TextStyle(color: subtitleColor),
+                                prefixIcon: Icon(
+                                  Icons.lock_outline,
+                                  color: subtitleColor,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: subtitleColor,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureConfirmPassword =
+                                          !_obscureConfirmPassword;
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color.fromARGB(255, 243, 109, 201),
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: inputBgColor,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please confirm your password';
+                                }
+                                if (value != _passwordController.text) {
+                                  return 'Passwords do not match';
                                 }
                                 return null;
                               },
                             ),
 
-                            // Remember Me and Forgot Password
+                            // Terms and Conditions Checkbox
                             Padding(
                               padding: const EdgeInsets.symmetric(
-                                vertical: 12.0,
+                                vertical: 16.0,
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: Checkbox(
-                                          value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? false;
-                                            });
-                                          },
-                                          fillColor:
-                                              MaterialStateProperty.resolveWith<
-                                                Color
-                                              >((Set<MaterialState> states) {
-                                                if (states.contains(
-                                                  MaterialState.selected,
-                                                )) {
-                                                  return const Color.fromARGB(
-                                                    255,
-                                                    243,
-                                                    109,
-                                                    201,
-                                                  );
-                                                }
-                                                return isDark
-                                                    ? Colors.white.withOpacity(
-                                                      0.3,
-                                                    )
-                                                    : Colors.grey.withOpacity(
-                                                      0.3,
-                                                    );
-                                              }),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: _agreeToTerms,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _agreeToTerms = value ?? false;
+                                        });
+                                      },
+                                      fillColor:
+                                          MaterialStateProperty.resolveWith<
+                                            Color
+                                          >((Set<MaterialState> states) {
+                                            if (states.contains(
+                                              MaterialState.selected,
+                                            )) {
+                                              return const Color.fromARGB(
+                                                255,
+                                                243,
+                                                109,
+                                                201,
+                                              );
+                                            }
+                                            return isDark
+                                                ? Colors.white.withOpacity(0.3)
+                                                : Colors.grey.withOpacity(0.3);
+                                          }),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Remember me',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text: 'I agree to the ',
                                         style: TextStyle(
                                           color: subtitleColor,
                                           fontSize: 14,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      // Navigate to forgot password screen
-                                    },
-                                    child: const Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        color: Color.fromARGB(
-                                          255,
-                                          243,
-                                          109,
-                                          201,
-                                        ),
-                                        fontSize: 14,
+                                        children: const [
+                                          TextSpan(
+                                            text: 'Terms of Service',
+                                            style: TextStyle(
+                                              color: Color.fromARGB(
+                                                255,
+                                                243,
+                                                109,
+                                                201,
+                                              ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          TextSpan(text: ' and '),
+                                          TextSpan(
+                                            text: 'Privacy Policy',
+                                            style: TextStyle(
+                                              color: Color.fromARGB(
+                                                255,
+                                                243,
+                                                109,
+                                                201,
+                                              ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -376,12 +494,12 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
 
-                            // Login Button
+                            // Register Button
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: _login,
+                                onPressed: _register,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color.fromARGB(
                                     255,
@@ -402,7 +520,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   ).withOpacity(0.5),
                                 ),
                                 child: const Text(
-                                  'LOGIN',
+                                  'SIGN UP',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -468,14 +586,14 @@ class _LoginScreenState extends State<LoginScreen>
                         ],
                       ),
 
-                      // Sign Up Link
+                      // Login Link
                       Padding(
                         padding: const EdgeInsets.only(top: 32.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Don't have an account? ",
+                              "Already have an account? ",
                               style: TextStyle(
                                 color: subtitleColor,
                                 fontSize: 14,
@@ -483,10 +601,10 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             GestureDetector(
                               onTap: () {
-                                Navigator.pushNamed(context, '/register');
+                                Navigator.pop(context);
                               },
                               child: const Text(
-                                'Sign Up',
+                                'Login',
                                 style: TextStyle(
                                   color: Color.fromARGB(255, 243, 109, 201),
                                   fontWeight: FontWeight.bold,
