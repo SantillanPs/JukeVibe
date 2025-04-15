@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'screens/home.dart';
 import 'screens/search_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/player_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/user_list_screen.dart';
 import 'utils/theme_provider.dart';
+import 'controllers/user_controller.dart';
+import 'screens/data_export_screen.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -26,11 +31,20 @@ class MyApp extends StatefulWidget {
 
 class _MusicAppState extends State<MyApp> {
   final ThemeProvider _themeProvider = ThemeProvider();
+  final UserController _userController = UserController();
 
   @override
   void initState() {
     super.initState();
     _themeProvider.addListener(_themeListener);
+    _initUserController();
+  }
+
+  Future<void> _initUserController() async {
+    // Ensure the app has initialized before loading data
+    WidgetsFlutterBinding.ensureInitialized();
+
+    await _userController.init();
   }
 
   @override
@@ -45,15 +59,26 @@ class _MusicAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'JukeVibe',
-      theme: _themeProvider.currentTheme,
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => LoginScreen(themeProvider: _themeProvider),
-        '/home': (context) => MainScreen(themeProvider: _themeProvider),
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _themeProvider),
+        ChangeNotifierProvider.value(value: _userController),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'JukeVibe',
+        theme: _themeProvider.currentTheme,
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => LoginScreen(themeProvider: _themeProvider),
+          '/register':
+              (context) => RegisterScreen(themeProvider: _themeProvider),
+          '/home': (context) => MainScreen(themeProvider: _themeProvider),
+          '/users': (context) => UserListScreen(themeProvider: _themeProvider),
+          '/data-export':
+              (context) => DataExportScreen(themeProvider: _themeProvider),
+        },
+      ),
     );
   }
 }
@@ -112,6 +137,13 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.people),
+            color: textColor,
+            onPressed: () {
+              Navigator.pushNamed(context, '/users');
+            },
+          ),
           IconButton(
             icon: Icon(
               widget.themeProvider.isDarkMode

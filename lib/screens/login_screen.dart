@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test/screens/register_screen.dart';
 import '../utils/theme_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -464,6 +465,15 @@ class _LoginScreenState extends State<LoginScreen>
                             GestureDetector(
                               onTap: () {
                                 // Navigate to sign up screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => RegisterScreen(
+                                          themeProvider: widget.themeProvider,
+                                        ),
+                                  ),
+                                );
                               },
                               child: const Text(
                                 'Sign Up',
